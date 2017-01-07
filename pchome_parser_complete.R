@@ -4,6 +4,12 @@ rm(list = ls())
 if (!require("pacman")) {install.packages("pacman")}
 pacman::p_load(httr, rvest, magrittr, jsonlite, dplyr, tidyr, lubridate, openxlsx)
 
+#設定存檔資料夾
+set.dir <- "E:/Git/crawler/Data"
+if(file.exists(set.dir) == FALSE){
+    set.dir <- getwd() 
+} 
+
 #設定大分類對應網址代碼
 cate <- c("3c", "nb", "mobile", "digi", "ce", "cp")
 cate.name <- c("3C", "NB", "通訊", "數位", "家電", "周邊")
@@ -84,7 +90,7 @@ parse.small.cate <- function(url){
         res_df <- data.frame()
     }else{
         res_df <- res_df.temp %>% select(-c(Pic, Price)) %>% 
-                mutate(Price_M = res_df.temp$Price$M, Price_P = res_df.temp$Price$P)
+                  mutate(Price_M = res_df.temp$Price$M, Price_P = res_df.temp$Price$P)
     }
     return(res_df)
 }
@@ -107,8 +113,8 @@ for(n in 1:length(full.cate.df$small.cate.url.list)){
         ptm.loop <- ptm.end - ptm.start
         
         cat(n, "/", length(small.cate.url.list), "sub-categories,", 
-            "progress:", sprintf("%1.2f%%", 100 * n/length(small.cate.url.list)),
-            ", spend", ptm.loop["elapsed"], "seconds", "\n")
+            "progress:", sprintf("%1.3f%%", 100 * n/length(small.cate.url.list)),
+            ", elapsed time:", as.character(seconds_to_period(trunc(ptm.loop["elapsed"]))), "\n")
             
             info.df <- full.cate.df[n, ] %>% as_data_frame() %>% 
                        select(Id, Sub.Id, Category, Name.x, Name.y) %>%
@@ -132,11 +138,14 @@ for(n in 1:length(full.cate.df$small.cate.url.list)){
 
 colnames(pchome.temp.df) <- df.colnames
 
-pchome.df <- pchome.temp.df %>% mutate(Parse.Date = as_date(today())) %>%
-    select(Parse.Date, everything())
+pchome.df <- pchome.temp.df %>% distinct() %>% 
+             mutate(Parse.Date = as_date(today())) %>% select(Parse.Date, everything())
 
-saveRDS(pchome.df, paste0("E:/Git/crawler/Data/pchome_", gsub(x = today(), "-", ""), ".rds"))
-write.csv(pchome.df, file = paste0("E:/Git/crawler/Data/pchome_", gsub(x = today(), "-", ""), ".csv"))
+saveRDS(pchome.df, paste0(set.dir, "/pchome_", gsub(x = today(), "-", ""), ".rds"))
+write.csv(pchome.df, file = paste0(set.dir, "/pchome_", gsub(x = today(), "-", ""), ".csv"))
 
-cat("Mission complete,", nrow(pchome.temp.df), paste0("records save in \"pchome_", gsub(x = today(), "-", ""), ".csv\""))
+category.df <- full.cate.df %>% select(Category, m.Category = Name.x, sl.Category = Name.y , Id, Sub.Id) %>% distinct()
+write.csv(category.df, file = paste0(set.dir, "/pchome_cate_list_", gsub(x = today(), "-", ""), ".csv"))
+
+cat("Mission complete,", nrow(pchome.temp.df), paste0("records save in \"" ,set.dir, "/pchome_", gsub(x = today(), "-", ""), ".csv\""))
 
