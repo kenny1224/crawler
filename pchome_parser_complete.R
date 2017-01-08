@@ -67,7 +67,7 @@ for(i in 1:length(sub.sub.cate)){
 }
 
 #大中小分類名稱及對應代碼資料 full.cate.df
-full.cate.df <- sub.cate.df %>% left_join(., sub.sub.cate.df, by = "Id")
+full.cate.df <- sub.cate.df %>% left_join(., sub.sub.cate.df, by = "Id") %>% distinct()
 
 #抓取小分類代碼對應商品資料的網址list
 small.cate.url.head <- "http://ecapi.pchome.com.tw/ecshop/prodapi/v2/store/"
@@ -163,8 +163,10 @@ cat("Mission complete,", nrow(pchome.temp.df), paste0("records save in \"" ,set.
 #完成後寄Gmail通知
 complete.mail <- mime() %>% 
                  from("kenny1224@gmail.com") %>% 
-                 to("kenny1224@gmail.com", "lara720608@gmail.com") %>% 
                  subject(paste0("PCHOME(", today(), ") web scraping is complete")) %>%  
-                 text_body("Download files from : https://drive.google.com/open?id=0BzYj5oybW9P1LXJrMmVSaVRtd0U")
+                 text_body(paste0("Download: ", paste(nrow(pchome.temp.df), "records"), "\n",
+                                  "Elapsed time: ", as.character(seconds_to_period(trunc(ptm.loop["elapsed"]))), "\n", 
+                                  "Download files from : https://drive.google.com/open?id=0BzYj5oybW9P1LXJrMmVSaVRtd0U"))
 
-send_message(complete.mail)
+send_message(complete.mail %>% to("kenny1224@gmail.com"))
+send_message(complete.mail %>% to("lara720608@gmail.com"))
