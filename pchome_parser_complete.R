@@ -104,8 +104,8 @@ ptm.start <- proc.time()
 
 #在console中以progress bar呈現進度
 pb <- progress_bar$new(
-      format = "Sub-categories :N [:bar] :per , elapsed time :ela ",
-      clear = FALSE, total = length(full.cate.df$small.cate.url.list), width = 120)
+      format = "Small-categories :N [:bar] :per ,elapsed time: :ela ",
+      clear = FALSE, total = length(full.cate.df$small.cate.url.list), width = 100)
 
 for(n in 1:length(full.cate.df$small.cate.url.list)){
     tryCatch(
@@ -125,7 +125,6 @@ for(n in 1:length(full.cate.df$small.cate.url.list)){
         pb$tick(tokens = list(N = paste0(n, "/", length(full.cate.df$small.cate.url.list)),
                               per = sprintf("%1.3f%%", 100 * n/length(small.cate.url.list)),
                               ela = paste0(as.character(seconds_to_period(trunc(ptm.loop["elapsed"]))))))
-        
             
             info.df <- full.cate.df[n, ] %>% as_data_frame() %>% 
                        select(Id, Sub.Id, Category, Name.x, Name.y) %>%
@@ -138,7 +137,7 @@ for(n in 1:length(full.cate.df$small.cate.url.list)){
                     pchome.df <- pchome.df %>% mutate(Parse.Date = as_date(today())) %>%
                                 select(Parse.Date, everything())
                     write.csv(pchome.df, file = paste0(set.dir, "/pchome_temp.csv"))
-                    cat("Save", n, "small-categories records in temp csv file \n")
+                    # cat("Save", n, "small-categories records in temp csv file \n")
                 }
             pchome.temp.df
             
@@ -162,7 +161,7 @@ cat("Mission complete,", nrow(pchome.temp.df), paste0("records save in \"" ,set.
 
 #完成後寄Gmail通知
 complete.mail <- mime() %>% 
-                 from("kenny1224@gmail.com") %>% 
+                 from("kenny1224@gmail.com") %>% #執行時瀏覽器會跳出，要求允許提供寄出信箱的權限
                  subject(paste0("PCHOME(", today(), ") web scraping is complete")) %>%  
                  text_body(paste0("Download: ", paste(nrow(pchome.temp.df), "records"), "\n",
                                   "Elapsed time: ", as.character(seconds_to_period(trunc(ptm.loop["elapsed"]))), "\n", 
