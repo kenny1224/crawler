@@ -5,7 +5,7 @@ if (!require("pacman")) {install.packages("pacman")}
 pacman::p_load(httr, rvest, magrittr, jsonlite, dplyr, tidyr, lubridate, openxlsx)
 
 #設定存檔資料夾
-set.dir <- "E:/Git/crawler/Data"
+set.dir <- "E:/Google 雲端硬碟/PCHOME_parser"
 if(file.exists(set.dir) == FALSE){
     set.dir <- getwd() 
 } 
@@ -102,23 +102,34 @@ df.colnames <- c("Web.Id","Web.Sub.Id","Category","Name.1","Name.2",
 pchome.temp.df <- data.frame()
 ptm.start <- proc.time()
 
+#在console中以progress bar呈現進度
+pb <- progress_bar$new(
+      format = "Sub-categories :N [:bar] :per , elapsed time :ela ",
+      clear = FALSE, total = length(full.cate.df$small.cate.url.list), width = 120)
+
 for(n in 1:length(full.cate.df$small.cate.url.list)){
     tryCatch(
         {
         small.cat.df <- parse.small.cate((full.cate.df$small.cate.url.list[n]))
            
-        Sys.sleep(runif(1, 1, 3))
+        Sys.sleep(runif(1, 1, 2))
         
         ptm.end <- proc.time()
         ptm.loop <- ptm.end - ptm.start
         
-        cat(n, "/", length(small.cate.url.list), "sub-categories,", 
-            "progress:", sprintf("%1.3f%%", 100 * n/length(small.cate.url.list)),
-            ", elapsed time:", as.character(seconds_to_period(trunc(ptm.loop["elapsed"]))), "\n")
+        # cat(n, "/", length(small.cate.url.list), "sub-categories,", 
+        #     "progress:", sprintf("%1.3f%%", 100 * n/length(small.cate.url.list)),
+        #     ", elapsed time:", as.character(seconds_to_period(trunc(ptm.loop["elapsed"]))), "\n")
+        
+        #progress bar 設定
+        pb$tick(tokens = list(N = paste0(n, "/", length(full.cate.df$small.cate.url.list)),
+                              per = sprintf("%1.3f%%", 100 * n/length(small.cate.url.list)),
+                              ela = paste0(as.character(seconds_to_period(trunc(ptm.loop["elapsed"]))))))
+        
             
             info.df <- full.cate.df[n, ] %>% as_data_frame() %>% 
                        select(Id, Sub.Id, Category, Name.x, Name.y) %>%
-                       .[rep(seq_len(nrow(.)), each = nrow(small.cat.df)),]
+                       .[rep(seq_len(nrow(.)), each = nrow(small.cat.df)), ]
             
             pchome.temp.df <- rbind(pchome.temp.df, cbind(info.df, small.cat.df))
             
@@ -126,13 +137,13 @@ for(n in 1:length(full.cate.df$small.cate.url.list)){
                     pchome.df <- pchome.temp.df %>% 'names<-'(df.colnames)
                     pchome.df <- pchome.df %>% mutate(Parse.Date = as_date(today())) %>%
                                 select(Parse.Date, everything())
-                    write.csv(pchome.df, file = paste0("E:/Git/crawler/Data/pchome_temp.csv"))
+                    write.csv(pchome.df, file = paste0(set.dir, "/pchome_temp.csv"))
                     cat("Save", n, "small-categories records in temp csv file \n")
                 }
             pchome.temp.df
             
-        },error = function(e){cat("ERROE:", conditionMessage(e), "\n")
-        },warning = function(w){cat("WARNING:", warning(w), "\n")}
+        }, error = function(e){cat("ERROE:", conditionMessage(e), "\n")
+        }, warning = function(w){cat("WARNING:", warning(w), "\n")}
         )
 }
 
@@ -149,3 +160,11 @@ write.csv(category.df, file = paste0(set.dir, "/pchome_cate_list_", gsub(x = tod
 
 cat("Mission complete,", nrow(pchome.temp.df), paste0("records save in \"" ,set.dir, "/pchome_", gsub(x = today(), "-", ""), ".csv\""))
 
+#完成後寄Gmail通知
+complete.mail <- mime() %>% 
+                 from("kenny1224@gmail.com") %>% 
+                 to("kenny1224@gmail.com", "lara720608@gmail.com") %>% 
+                 subject(paste0("PCHOME(", today(), ") web scraping is complete")) %>%  
+                 text_body("Download files from : https://drive.google.com/open?id=0BzYj5oybW9P1LXJrMmVSaVRtd0U")
+
+send_message(complete.mail)
