@@ -2,7 +2,7 @@ rm(list = ls())
 
 #載入/安裝必要套件
 if (!require("pacman")) {install.packages("pacman")}
-pacman::p_load(httr, rvest, magrittr, jsonlite, dplyr, tidyr, lubridate, openxlsx)
+pacman::p_load(httr, rvest, magrittr, jsonlite, dplyr, tidyr, lubridate, openxlsx, progress, gmailr)
 
 #設定存檔資料夾
 set.dir <- "E:/Google 雲端硬碟/PCHOME_parser"
